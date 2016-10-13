@@ -81,6 +81,7 @@
                         stroke: "#AFA876",
                         strokeWidth: "9",
                         strokeOpacity: "0.8",
+                        opacity: "0.2",
                         id: function(i) {return "rect" + i}
                      },
                      // Properties of the Text on each of the block 
@@ -131,6 +132,7 @@
                             .attr("height", GameData.Block.height)
                             .style("fill", GameData.Block.fill)
                             .style("stroke", GameData.Block.stroke)
+                            .style("opacity", "0.2")
                             .attr("id", function(d) { return GameData.Block.id(d)})
                             .style("stroke-width", GameData.Block.strokeWidth)
                             .style("stroke-opacity", GameData.Block.strokeOpacity)
