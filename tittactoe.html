@@ -1,19 +1,37 @@
 <html>
 <head>
     <style>
-        .parent {
-            display: flex;
-            justify-content:center;
+
+        .bgs {
+            background-image: url("images/bg.jpg");
+            background-repeat: repeat;
         }
 
-        .left {
-            //border: 1px solid;
+        .parent {
+            display: flex;
+            flex-direction: column;
+            justify-content:center;
+            align-items:center;
+         }
+
+        .titleDiv {
+              -webkit-text-stroke: 1px black;
+               color: white;
+               text-shadow:
+                   3px 3px 0 #000,
+                 -1px -1px 0 #000,  
+                  1px -1px 0 #000,
+                  -1px 1px 0 #000,
+                   1px 1px 0 #000;
+              font-size: 50px;
+              margin-right: 65px;
         }
+
     </style>
     <script src='http://d3js.org/d3.v2.js'></script>
 </head>
 
-<body>
+<body class="bgs">
     
    
 
@@ -39,10 +57,19 @@
                      gameCompletionPaths : [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]],
                      // Adjustment factors for x and y
                      adjustmentFactor : [[0,65,130,65],[0,65,130,65],[0,65,130,65],[65,0,65,130],[65,0,65,130],[65,0,65,130],[0,0,130,130],[130,0,0,130]],
+                     // Status of the game
+                     status: {
+                        initializing : "0",
+                        readyToPlay : "1",
+                        inprogress: "2",
+                        complete: "3"
+                     },
+                     // Current status of the game
+                     gameStatus : "",
                      // Board settings for the Game
                      Board: {
-                        width : "900px",
-                        height : "900px",
+                        width : "500px",
+                        height : "500px",
                         // Container for the all of the Game graffics
                         svgContainer : ""
                      },
@@ -50,23 +77,26 @@
                      Block: {
                         width : "130px",
                         height: "130px",
-                        fill: "#99A3A4",
-                        stroke: "#D6EAF8",
-                        strokeWidth: "5",
+                        fill: "#AF975B",
+                        stroke: "#AFA876",
+                        strokeWidth: "9",
                         strokeOpacity: "0.8",
                         id: function(i) {return "rect" + i}
                      },
                      // Properties of the Text on each of the block 
                      Text: {
                         fontFamily:'"Lato", "Helvetica", Helvetica, sans-serif',
-                        fontSize:"60px",
-                        stroke:"#00ff00",
-                        fill: "#0000ff",
+                        fontSize:"75px",
+                        stroke:"#4863A0",
+                        fill: "#F5F5F5",
                         id: function(i) {return "text" + i}
                      }
+
                 };
 
+                GameData.gameStatus = GameData.status.initializing;
                 drawBoard();
+                GameData.gameStatus = GameData.status.readyToPlay;
 
                 var getCurrentMarker = function() {
                     GameData.currentMarker = (GameData.currentMarker == GameData.marker2 || GameData.currentMarker == "") ? GameData.marker1 : GameData.marker2;
@@ -75,12 +105,14 @@
 
                 function drawBoard() {
 
+                    //d3.select("body").append("div").attr("class","titleDiv").text(function(d) {return "Tic-Tac-Toe"});
                     var parentDiv = d3.select("body").append("div").attr("class","parent");
-                    parentDiv.append("div").attr("class","left").attr("id","leftDiv");
-                    var rightDiv = parentDiv.append("div").attr("class","right").attr("id","rightDiv");
+                    parentDiv.append("div").attr("class","titleDiv").text(function(d) {return "Tic-Tac-Toe"});
+                    //parentDiv.append("div").attr("class","left").attr("id","leftDiv");
+                    var gameDiv = parentDiv.append("div").attr("class","gameDiv").attr("id","gameDiv");
 
                     // Create Parent SVG container
-                    GameData.Board.svgContainer = rightDiv.append("svg");
+                    GameData.Board.svgContainer = gameDiv.append("svg");
                     
                     // Create g elements to group rectangles and the Text on top
                     var parentG = GameData.Board.svgContainer
@@ -113,7 +145,7 @@
                             .attr("x", function(d) {return (40 + 140 * (d%3));})
                             .attr("y", function(d) {
                                  var factor = (Math.floor(d/3) + 1);
-                                return (factor * 80 + ((factor - 1) * 50));
+                                return (factor * 80 + ((factor - 1) * 60));
                             })
                             .attr("id", function(d) {return GameData.Text.id(d)})
                             .on('click', function(d,i){handleClick(d,i);});                
@@ -121,23 +153,25 @@
                
                 function handleClick(d, i) {
 
+                    GameData.gameStatus = GameData.status.inprogress;
                     // If user is clicking on a cell that has been already frozen do not process the click
-                    if((GameData.frozenCells.indexOf('rect'+ d) > 0) || (GameData.frozenCells.indexOf('text'+ d) > 0) || GameData.gameComplete) {
-                            // Do nothing value has been already set
-                            return;
+                    if((GameData.frozenCells.indexOf(GameData.Block.id(d)) > 0) || (GameData.frozenCells.indexOf(GameData.Text.id(d)) > 0) || GameData.gameComplete) {
+                        // Do nothing value has been already set
+                        return;
                     }
                     
-                    GameData.frozenCells.push('rect' + d);
-                    GameData.frozenCells.push('text' + d);
+                    GameData.frozenCells.push(GameData.Block.id(d));
+                    GameData.frozenCells.push(GameData.Text.id(d));
 
                     // Get the currentMarker to place
                     var currentMarker = getCurrentMarker();
-                    document.getElementById('text' + d).textContent = currentMarker;
+                    document.getElementById(GameData.Text.id(d)).textContent = currentMarker;
                     // Check of the Game is complete
                     var index = isGameComplete(currentMarker);
                     // If the length of path is greater than one that means we have a path that completes the game.
                     if(index >= 0) {
                         GameData.gameComplete = true;
+                        GameData.gameStatus = GameData.status.complete;
                         notifyGameOver(index, currentMarker);
                     }
 
@@ -154,10 +188,10 @@
 
                     var matchCount = 0;
 
-                    for(var i=0 ; i<=7 ; i++) {
+                    for(var i=0 ; i<GameData.gameCompletionPaths.length; i++) {
                         var completePath = GameData.gameCompletionPaths[i];
-                        for(var j=0;j<=2;j++) {
-                             if(document.getElementById('text' + completePath[j]).textContent == player) {
+                        for(var j=0; j< completePath.length; j++) {
+                             if(document.getElementById(GameData.Text.id(completePath[j])).textContent == player) {
                                 matchCount++;
                              } else {
                                 break;
@@ -199,13 +233,13 @@
                                  .attr("x2", Number(x2) + GameData.adjustmentFactor[index][2])
                                  .attr("y2", Number(y2) + GameData.adjustmentFactor[index][3])
                                  .attr("id", "gameCompletionLine")
-                                 .attr("stroke", "gray")
-                                 .attr("stroke-width", "4")
-                                 .attr("fill", "red");
+                                 .attr("stroke", "#000000")
+                                 .attr("stroke-width", "4");
+                                
 
-                        msg = "*" + winner + "* Won!!!" + ". Click here to start again";      
+                        msg =  winner + " 's takes the game...";      
                     } else if(index == -2) {
-                        msg = "It is a draw. Click here to start again";
+                        msg = "It is a draw.";
                     }
 
  
@@ -219,16 +253,15 @@
                             .attr("width", 400)
                             .attr("height", 130)
                             .attr("id", "newGameRect")
-                            .style("opacity", "0.2")
-                            .style("fill", "blue")
-                            .style("stroke", "white")
+                            .style("fill", "black")
+                            .style("stroke", "black")
                             .on('click', function(){resetGame();});
 
                     newGameG.append("text")
-                            .style("font-family", "Verdana")
-                            .style("font-size", "30px")
-                            .style("stroke", "Blue")
-                            .style("fill", "White")
+                            .style("font-family", GameData.Text.fontFamily)
+                            .style("font-size", "40px")
+                            .style("stroke", GameData.Text.stroke)
+                            .style("fill", GameData.Text.fill)
                             .attr("x", function(d) {return 20;})
                             .attr("y", function(d) {return 200;})
                             .text(function(d) {return msg;})
